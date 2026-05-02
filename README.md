@@ -25,7 +25,7 @@ The default model and proxy port can be changed in the app. If you change the po
 
 ## Updates
 
-Starting with `v0.1.3`, the app checks GitHub Releases after launch and can hot-update by downloading the published `app.asar` package instead of the full installer. You can also run **检查更新...** from the application menu.
+Starting with `v0.1.4`, the app checks GitHub Releases after launch and can hot-update by downloading the published `app.asar` package instead of the full installer. You can also run **检查更新...** from the application menu.
 
 ## Requirements
 
@@ -58,7 +58,7 @@ npm run dist
 Push a semver tag to trigger GitHub Actions:
 
 ```bash
-git tag v0.1.3
+git tag v0.1.4
 git push origin main --tags
 ```
 
