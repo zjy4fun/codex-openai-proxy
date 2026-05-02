@@ -19,8 +19,8 @@ render_svg() {
 }
 
 render_svg "$BUILD_DIR/icon.svg" 1024 "$BUILD_DIR/icon.png"
-render_svg "$BUILD_DIR/trayTemplate.svg" 22 "$BUILD_DIR/trayTemplate.png"
-render_svg "$BUILD_DIR/trayTemplate.svg" 44 "$BUILD_DIR/trayTemplate@2x.png"
+node "$ROOT/scripts/render-tray-template.js" "$BUILD_DIR/trayTemplate.png" 22
+node "$ROOT/scripts/render-tray-template.js" "$BUILD_DIR/trayTemplate@2x.png" 44
 
 mkdir -p "$ROOT/src/assets"
 cp "$BUILD_DIR/icon.png" "$ROOT/src/assets/icon.png"
