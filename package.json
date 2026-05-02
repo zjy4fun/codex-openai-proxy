@@ -1,0 +1,44 @@
+{
+  "name": "codex-openai-proxy",
+  "version": "0.1.0",
+  "description": "A macOS desktop switch for exposing Codex OAuth as an OpenAI-compatible local API.",
+  "main": "src/main.js",
+  "author": "zjy4fun <zjy4fun@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zjy4fun/codex-openai-proxy.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/proxy.js",
+    "dist": "electron-builder --mac dmg zip"
+  },
+  "devDependencies": {
+    "electron": "38.8.6",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "fun.zjy.codex-openai-proxy",
+    "productName": "Codex OpenAI Proxy",
+    "asar": true,
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "zjy4fun",
+        "repo": "codex-openai-proxy"
+      }
+    ]
+  }
+}

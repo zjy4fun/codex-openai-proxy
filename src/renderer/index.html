@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Codex OpenAI Proxy</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <section class="topline">
+      <div>
+        <h1>Codex OpenAI Proxy</h1>
+        <div class="sub">把本机 Codex 登录态变成 OpenAI 兼容接口。</div>
+      </div>
+      <div class="pill"><span id="dot" class="dot"></span><span id="stateText">读取中</span></div>
+    </section>
+
+    <section class="grid">
+      <div class="panel control">
+        <div class="switch-row">
+          <div>
+            <div class="label-title">代理服务</div>
+            <div class="label-note" id="switchNote">打开后显示可用 Base URL。</div>
+          </div>
+          <label class="switch" aria-label="代理服务开关">
+            <input id="enabledSwitch" type="checkbox" />
+            <span class="track"><span class="thumb"></span></span>
+          </label>
+        </div>
+
+        <div class="status-list">
+          <div class="status-line"><span>Codex 登录态</span><strong id="authState">-</strong></div>
+          <div class="status-line"><span>默认模型</span><strong id="modelState">-</strong></div>
+          <div class="status-line"><span>代理端口</span><strong id="portState">-</strong></div>
+        </div>
+
+        <div class="actions">
+          <button id="refreshBtn" class="btn" type="button">刷新</button>
+          <button id="testBtn" class="btn primary" type="button">测试请求</button>
+        </div>
+        <div id="message" class="message"></div>
+      </div>
+
+      <div class="panel urls">
+        <div id="baseRow" class="url-row dim">
+          <div>
+            <div class="url-label">OpenAI Base URL</div>
+            <div id="baseUrl" class="url-value">-</div>
+          </div>
+          <button id="copyBase" class="btn" type="button">复制</button>
+        </div>
+        <div id="chatRow" class="url-row dim">
+          <div>
+            <div class="url-label">Chat Completions URL</div>
+            <div id="chatUrl" class="url-value">-</div>
+          </div>
+          <button id="copyChat" class="btn" type="button">复制</button>
+        </div>
+        <div class="url-row">
+          <div>
+            <div class="url-label">API Key</div>
+            <div class="url-value">dummy</div>
+          </div>
+          <button id="copyKey" class="btn" type="button">复制</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
