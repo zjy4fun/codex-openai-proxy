@@ -1,16 +1,16 @@
 # Codex OpenAI Proxy
 
-A small macOS desktop app that exposes a local OpenAI-compatible API backed by your Codex / ChatGPT OAuth login.
+A small desktop app that exposes a local OpenAI-compatible API backed by your Codex / ChatGPT OAuth login.
 
 The app gives you one switch. Turn it on, then copy the OpenAI Base URL into browser extensions such as Immersive Translate.
 
 ## Install
 
-Download the latest `.dmg` from GitHub Releases:
+Download the latest installer from GitHub Releases:
 
 <https://github.com/zjy4fun/codex-openai-proxy/releases>
 
-Open the DMG, drag **Codex OpenAI Proxy** into Applications, then launch it.
+On macOS, open the DMG, drag **Codex OpenAI Proxy** into Applications, then launch it. On Windows, run the `Setup.exe` installer.
 
 ## Extension Settings
 
@@ -22,6 +22,10 @@ After turning on the switch in the app:
 - Model: `gpt-5.4-mini`
 
 The default model and proxy port can be changed in the app. If you change the port while the proxy is running, the app restarts the proxy on the new port and updates the displayed URLs.
+
+## Updates
+
+Starting with `v0.1.3`, the app checks GitHub Releases after launch and can hot-update by downloading the published `app.asar` package instead of the full installer. You can also run **检查更新...** from the application menu.
 
 ## Requirements
 
@@ -54,8 +58,8 @@ npm run dist
 Push a semver tag to trigger GitHub Actions:
 
 ```bash
-git tag v0.1.2
+git tag v0.1.3
 git push origin main --tags
 ```
 
-The workflow builds macOS `.dmg` and `.zip` assets and publishes them to GitHub Releases.
+The workflow builds macOS `.dmg` / `.zip`, Windows `.exe` / `.zip`, update metadata, and the `app.asar` hot-update asset, then publishes them to GitHub Releases.

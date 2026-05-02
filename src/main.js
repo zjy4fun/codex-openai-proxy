@@ -2,6 +2,12 @@ const { app, BrowserWindow, ipcMain, clipboard, shell, Menu } = require("electro
 const path = require("node:path");
 const fs = require("node:fs");
 const { CodexOpenAIProxy } = require("./proxy");
+const {
+  applyPendingUpdate,
+  checkForUpdatesManual,
+  initAutoUpdater,
+  registerUpdaterIpcHandlers,
+} = require("./updater");
 
 const CONFIG_PATH = path.join(app.getPath("userData"), "config.json");
 
@@ -85,6 +91,11 @@ function setMenu() {
       submenu: [
         { role: "about" },
         { type: "separator" },
+        {
+          label: "检查更新...",
+          click: () => checkForUpdatesManual(),
+        },
+        { type: "separator" },
         { role: "quit" },
       ],
     },
@@ -113,9 +124,13 @@ function setMenu() {
 
 app.whenReady().then(async () => {
   app.setName("Codex OpenAI Proxy");
+  if (applyPendingUpdate()) return;
+
   config = readConfig();
   createProxy();
+  registerUpdaterIpcHandlers();
   setMenu();
+  initAutoUpdater();
 
   if (config.enabled) {
     try {

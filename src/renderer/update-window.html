@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codex OpenAI Proxy 更新</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #eef3f6;
+        --surface: rgba(255, 255, 255, 0.68);
+        --line: rgba(24, 34, 45, 0.12);
+        --text: #17202a;
+        --soft: #526171;
+        --muted: #718092;
+        --track: rgba(23, 32, 42, 0.12);
+        --accent: #009a72;
+        --accent-strong: #007f60;
+        --accent-soft: rgba(0, 154, 114, 0.13);
+        --button: rgba(255, 255, 255, 0.82);
+        --button-hover: rgba(255, 255, 255, 0.96);
+        --shadow: 0 16px 36px rgba(24, 34, 45, 0.12);
+        --focus: rgba(0, 154, 114, 0.28);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #15191d;
+          --surface: rgba(255, 255, 255, 0.08);
+          --line: rgba(255, 255, 255, 0.11);
+          --text: #f3f6f8;
+          --soft: #c7d0da;
+          --muted: #94a1ad;
+          --track: rgba(255, 255, 255, 0.16);
+          --accent: #16c997;
+          --accent-strong: #25d7a5;
+          --accent-soft: rgba(22, 201, 151, 0.16);
+          --button: rgba(255, 255, 255, 0.1);
+          --button-hover: rgba(255, 255, 255, 0.16);
+          --shadow: 0 16px 36px rgba(0, 0, 0, 0.34);
+          --focus: rgba(22, 201, 151, 0.32);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        display: grid;
+        min-height: 100%;
+        padding: 22px 24px 18px;
+        background:
+          linear-gradient(145deg, var(--accent-soft), transparent 38%),
+          var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        font-size: 13px;
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+        -webkit-app-region: drag;
+        user-select: none;
+      }
+
+      body.compact {
+        align-content: center;
+      }
+
+      .panel {
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto;
+        gap: 18px;
+        min-height: 100%;
+      }
+
+      .card {
+        display: grid;
+        grid-template-columns: 56px minmax(0, 1fr);
+        gap: 16px;
+        min-width: 0;
+      }
+
+      .icon {
+        display: grid;
+        place-items: center;
+        width: 56px;
+        height: 56px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .icon svg {
+        width: 34px;
+        height: 34px;
+      }
+
+      .content {
+        display: grid;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        min-height: 24px;
+        padding: 0 10px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .badge.hidden,
+      .notes-shell.hidden,
+      .progress.hidden,
+      .button.hidden,
+      .detail.hidden {
+        display: none;
+      }
+
+      .title {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.28;
+        font-weight: 750;
+        letter-spacing: 0;
+      }
+
+      .detail {
+        margin: 0;
+        color: var(--soft);
+        white-space: pre-wrap;
+      }
+
+      .progress {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .progress-track {
+        height: 8px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--track);
+      }
+
+      .progress-fill {
+        width: 0%;
+        height: 100%;
+        border-radius: 999px;
+        background: var(--accent);
+        transition: width 160ms ease;
+      }
+
+      .progress-text {
+        color: var(--muted);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .notes-shell {
+        display: grid;
+        gap: 10px;
+        min-height: 0;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+      }
+
+      .notes-label {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .notes {
+        min-height: 220px;
+        max-height: 300px;
+        margin: 0;
+        overflow: auto;
+        padding-right: 6px;
+        color: var(--soft);
+        font-family: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.56;
+        white-space: pre-wrap;
+        word-break: break-word;
+        user-select: text;
+        -webkit-user-select: text;
+        -webkit-app-region: no-drag;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+        -webkit-app-region: no-drag;
+      }
+
+      .button {
+        appearance: none;
+        min-width: 88px;
+        height: 34px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--button);
+        color: var(--text);
+        font: inherit;
+        font-weight: 650;
+        cursor: pointer;
+        transition: background 120ms ease, transform 80ms ease, box-shadow 120ms ease;
+      }
+
+      .button:hover {
+        background: var(--button-hover);
+      }
+
+      .button:active {
+        transform: translateY(1px);
+      }
+
+      .button:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--focus);
+      }
+
+      .button.primary {
+        border-color: transparent;
+        background: var(--accent);
+        color: white;
+      }
+
+      .button.primary:hover {
+        background: var(--accent-strong);
+      }
+    </style>
+  </head>
+  <body class="compact">
+    <main class="panel">
+      <section class="card">
+        <div class="icon" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="32" cy="32" r="25" stroke="var(--accent)" stroke-width="4" />
+            <path d="M34 14l4.6 10.3L50 29l-10.4 5.3L35 46l-5.5-10.6L18 31l10.6-5.8L34 14Z" fill="var(--accent)" />
+            <path d="M20 47a23 23 0 0 1-6-22" stroke="var(--accent-strong)" stroke-width="4" stroke-linecap="round" />
+          </svg>
+        </div>
+        <section class="content">
+          <span id="badge" class="badge hidden"></span>
+          <h1 id="title" class="title">正在下载更新...</h1>
+          <p id="detail" class="detail"></p>
+          <div id="progress" class="progress">
+            <div class="progress-track">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <span id="progressText" class="progress-text">0.0 / 0.0 MB</span>
+          </div>
+          <section id="notesShell" class="notes-shell hidden">
+            <div id="notesLabel" class="notes-label">更新说明</div>
+            <pre id="notes" class="notes"></pre>
+          </section>
+        </section>
+      </section>
+
+      <div class="actions">
+        <button id="tertiaryButton" class="button hidden" type="button">跳过此版本</button>
+        <button id="secondaryButton" class="button hidden" type="button">稍后</button>
+        <button id="primaryButton" class="button primary" type="button">取消</button>
+      </div>
+    </main>
+
+    <script>
+      const bridge = window.proxyApp;
+      if (!bridge) throw new Error("proxyApp bridge not available");
+
+      const VALID_ACTIONS = new Set([
+        "cancel",
+        "restart",
+        "close",
+        "download",
+        "open-release",
+        "skip-version",
+      ]);
+
+      const state = {
+        title: "正在下载更新...",
+        detail: "",
+        downloadedBytes: 0,
+        totalBytes: 1,
+        progress: 0,
+        showProgress: true,
+        primaryAction: "cancel",
+        primaryLabel: "取消",
+        secondaryAction: null,
+        secondaryLabel: "",
+        tertiaryAction: null,
+        tertiaryLabel: "",
+        badge: "",
+        notes: "",
+        notesLabel: "更新说明",
+      };
+
+      const els = {
+        badge: document.querySelector("#badge"),
+        title: document.querySelector("#title"),
+        detail: document.querySelector("#detail"),
+        progress: document.querySelector("#progress"),
+        progressFill: document.querySelector("#progressFill"),
+        progressText: document.querySelector("#progressText"),
+        notesShell: document.querySelector("#notesShell"),
+        notesLabel: document.querySelector("#notesLabel"),
+        notes: document.querySelector("#notes"),
+        primaryButton: document.querySelector("#primaryButton"),
+        secondaryButton: document.querySelector("#secondaryButton"),
+        tertiaryButton: document.querySelector("#tertiaryButton"),
+      };
+
+      function normalizeBytes(value) {
+        if (!Number.isFinite(value) || value <= 0) return 0;
+        return Math.round(value);
+      }
+
+      function clampProgress(value) {
+        if (!Number.isFinite(value)) return 0;
+        if (value < 0) return 0;
+        if (value > 1) return 1;
+        return value;
+      }
+
+      function formatMegabytes(bytes) {
+        return (bytes / (1024 * 1024)).toFixed(1);
+      }
+
+      function applyPartialState(payload) {
+        if (!payload || typeof payload !== "object") return;
+
+        if (typeof payload.title === "string") state.title = payload.title;
+        if (typeof payload.detail === "string") state.detail = payload.detail;
+        if (typeof payload.primaryLabel === "string") state.primaryLabel = payload.primaryLabel;
+        state.secondaryLabel = typeof payload.secondaryLabel === "string" ? payload.secondaryLabel : "";
+        state.tertiaryLabel = typeof payload.tertiaryLabel === "string" ? payload.tertiaryLabel : "";
+        state.badge = typeof payload.badge === "string" ? payload.badge : "";
+        state.notes = typeof payload.notes === "string" ? payload.notes : "";
+        state.notesLabel = typeof payload.notesLabel === "string" ? payload.notesLabel : "更新说明";
+        if (typeof payload.showProgress === "boolean") state.showProgress = payload.showProgress;
+
+        state.downloadedBytes = normalizeBytes(
+          typeof payload.downloadedBytes === "number" ? payload.downloadedBytes : state.downloadedBytes,
+        );
+        state.totalBytes = Math.max(
+          normalizeBytes(typeof payload.totalBytes === "number" ? payload.totalBytes : state.totalBytes),
+          state.downloadedBytes,
+          1,
+        );
+        state.progress = clampProgress(
+          typeof payload.progress === "number"
+            ? payload.progress
+            : state.downloadedBytes / state.totalBytes,
+        );
+
+        state.primaryAction = VALID_ACTIONS.has(payload.primaryAction) ? payload.primaryAction : state.primaryAction;
+        state.secondaryAction = VALID_ACTIONS.has(payload.secondaryAction) ? payload.secondaryAction : null;
+        state.tertiaryAction = VALID_ACTIONS.has(payload.tertiaryAction) ? payload.tertiaryAction : null;
+      }
+
+      function renderButton(el, label, action) {
+        if (action && label) {
+          el.textContent = label;
+          el.dataset.action = action;
+          el.classList.remove("hidden");
+          return;
+        }
+        el.dataset.action = "";
+        el.classList.add("hidden");
+      }
+
+      function render() {
+        document.body.classList.toggle("compact", !state.notes);
+        els.title.textContent = state.title;
+
+        els.badge.textContent = state.badge;
+        els.badge.classList.toggle("hidden", !state.badge);
+
+        els.detail.textContent = state.detail;
+        els.detail.classList.toggle("hidden", !state.detail);
+
+        els.progress.classList.toggle("hidden", !state.showProgress);
+        if (state.showProgress) {
+          els.progressFill.style.width = `${(state.progress * 100).toFixed(1)}%`;
+          const total = Math.max(state.totalBytes, state.downloadedBytes);
+          els.progressText.textContent = `${formatMegabytes(state.downloadedBytes)} / ${formatMegabytes(total)} MB`;
+        }
+
+        els.notesShell.classList.toggle("hidden", !state.notes);
+        els.notesLabel.textContent = state.notesLabel || "更新说明";
+        els.notes.textContent = state.notes;
+
+        renderButton(els.tertiaryButton, state.tertiaryLabel, state.tertiaryAction);
+        renderButton(els.secondaryButton, state.secondaryLabel, state.secondaryAction);
+        renderButton(els.primaryButton, state.primaryLabel, state.primaryAction);
+      }
+
+      async function runAction(action) {
+        if (!action) return;
+        try {
+          if (action === "cancel") {
+            await bridge.cancelUpdateDownload();
+            return;
+          }
+          if (action === "restart") {
+            await bridge.restartForUpdate();
+            return;
+          }
+          if (action === "close") {
+            await bridge.closeUpdateWindow();
+            return;
+          }
+          await bridge.runUpdateAction(action);
+        } catch (error) {
+          console.error("Update action failed:", error);
+        }
+      }
+
+      for (const button of [els.primaryButton, els.secondaryButton, els.tertiaryButton]) {
+        button.addEventListener("click", () => runAction(button.dataset.action || ""));
+      }
+
+      const unsubscribe = bridge.onUpdateWindowState((payload) => {
+        applyPartialState(payload);
+        render();
+      });
+
+      window.addEventListener("beforeunload", () => {
+        if (typeof unsubscribe === "function") unsubscribe();
+      });
+
+      render();
+    </script>
+  </body>
+</html>
