@@ -109,7 +109,22 @@ jobs:
         run: ls -lhR artifacts
 
       - name: Write release notes
-        run: echo "Release ${GITHUB_REF_NAME}" > release_notes.txt
+        run: |
+          cat > release_notes.txt <<EOF
+          Release ${GITHUB_REF_NAME}
+
+          ## macOS 打不开程序的解决办法
+
+          如果 macOS 提示无法打开、已损坏、无法验证开发者，通常是 Gatekeeper 在拦截未签名或未公证应用。
+
+          安装到 /Applications 后，可以在终端执行下面的命令移除隔离标记：
+
+          \`\`\`bash
+          xattr -rd com.apple.quarantine "/Applications/Codex OpenAI Proxy.app"
+          \`\`\`
+
+          然后重新打开应用。
+          EOF
 
       - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v3.0.0

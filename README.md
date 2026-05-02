@@ -12,6 +12,12 @@ Download the latest installer from GitHub Releases:
 
 On macOS, open the DMG, drag **Codex OpenAI Proxy** into Applications, then launch it. On Windows, run the `Setup.exe` installer.
 
+If macOS says the app cannot be opened, is damaged, or cannot verify the developer, Gatekeeper is usually blocking the unsigned or unnotarized app. After installing it to Applications, run:
+
+```bash
+xattr -rd com.apple.quarantine "/Applications/Codex OpenAI Proxy.app"
+```
+
 ## Extension Settings
 
 After turning on the switch in the app:
@@ -62,7 +68,7 @@ npm run dist
 Push a semver tag to trigger GitHub Actions:
 
 ```bash
-git tag v0.1.5
+git tag v0.1.6
 git push origin main --tags
 ```
 
