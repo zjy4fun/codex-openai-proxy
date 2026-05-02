@@ -21,6 +21,8 @@ After turning on the switch in the app:
 - API Key: any non-empty value, for example `dummy`
 - Model: `gpt-5.4-mini`
 
+The default model and proxy port can be changed in the app. If you change the port while the proxy is running, the app restarts the proxy on the new port and updates the displayed URLs.
+
 ## Requirements
 
 You must already be logged in with Codex or CC Switch on the same Mac. The app reads OAuth state from one of:
@@ -52,7 +54,7 @@ npm run dist
 Push a semver tag to trigger GitHub Actions:
 
 ```bash
-git tag v0.1.1
+git tag v0.1.2
 git push origin main --tags
 ```
 

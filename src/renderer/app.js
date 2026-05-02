@@ -4,8 +4,9 @@ const els = {
   enabledSwitch: document.querySelector("#enabledSwitch"),
   switchNote: document.querySelector("#switchNote"),
   authState: document.querySelector("#authState"),
-  modelState: document.querySelector("#modelState"),
-  portState: document.querySelector("#portState"),
+  modelInput: document.querySelector("#modelInput"),
+  portInput: document.querySelector("#portInput"),
+  saveSettingsBtn: document.querySelector("#saveSettingsBtn"),
   baseUrl: document.querySelector("#baseUrl"),
   chatUrl: document.querySelector("#chatUrl"),
   baseRow: document.querySelector("#baseRow"),
@@ -19,6 +20,7 @@ const els = {
 };
 
 let current = null;
+let settingsDirty = false;
 
 function setMessage(text, kind = "") {
   els.message.textContent = text || "";
@@ -32,8 +34,11 @@ function render(status) {
   els.stateText.textContent = status.enabled ? "运行中" : "已关闭";
   els.switchNote.textContent = status.enabled ? "OpenAI Base URL 已可用。" : "打开后显示可用 Base URL。";
   els.authState.textContent = status.auth.ready ? status.auth.source : "未找到";
-  els.modelState.textContent = status.defaultModel;
-  els.portState.textContent = String(status.proxyPort);
+  if (!settingsDirty) {
+    els.modelInput.value = status.defaultModel;
+    els.portInput.value = String(status.proxyPort);
+    els.saveSettingsBtn.disabled = true;
+  }
   els.baseUrl.textContent = status.enabled ? status.baseUrl : "打开开关后显示";
   els.chatUrl.textContent = status.enabled ? status.chatCompletionsUrl : "打开开关后显示";
   els.baseRow.classList.toggle("dim", !status.enabled);
@@ -68,7 +73,37 @@ async function copy(text) {
   setMessage("已复制。", "good");
 }
 
+function markSettingsDirty() {
+  settingsDirty = true;
+  els.saveSettingsBtn.disabled = false;
+  setMessage("配置有改动，保存后生效。");
+}
+
+async function saveSettings() {
+  const previousPort = current?.proxyPort;
+  els.saveSettingsBtn.disabled = true;
+  setMessage("正在保存配置...");
+  try {
+    const status = await window.proxyApp.updateSettings({
+      defaultModel: els.modelInput.value.trim(),
+      proxyPort: Number(els.portInput.value),
+    });
+    settingsDirty = false;
+    render(status);
+    setMessage(previousPort && previousPort !== status.proxyPort && status.enabled
+      ? "配置已保存，代理已切换到新端口。"
+      : "配置已保存。", "good");
+  } catch (error) {
+    els.saveSettingsBtn.disabled = false;
+    setMessage(error.message, "bad");
+    await loadStatus();
+  }
+}
+
 els.enabledSwitch.addEventListener("change", (event) => toggle(event.target.checked));
+els.modelInput.addEventListener("input", markSettingsDirty);
+els.portInput.addEventListener("input", markSettingsDirty);
+els.saveSettingsBtn.addEventListener("click", saveSettings);
 els.refreshBtn.addEventListener("click", loadStatus);
 els.copyBase.addEventListener("click", () => current?.enabled && copy(current.baseUrl));
 els.copyChat.addEventListener("click", () => current?.enabled && copy(current.chatCompletionsUrl));

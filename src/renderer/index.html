@@ -31,8 +31,18 @@
 
         <div class="status-list">
           <div class="status-line"><span>Codex 登录态</span><strong id="authState">-</strong></div>
-          <div class="status-line"><span>默认模型</span><strong id="modelState">-</strong></div>
-          <div class="status-line"><span>代理端口</span><strong id="portState">-</strong></div>
+        </div>
+
+        <div class="settings-form">
+          <label class="field">
+            <span>默认模型</span>
+            <input id="modelInput" class="text-input" type="text" spellcheck="false" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>代理端口</span>
+            <input id="portInput" class="text-input" type="number" min="1024" max="65535" step="1" inputmode="numeric" />
+          </label>
+          <button id="saveSettingsBtn" class="btn" type="button" disabled>保存配置</button>
         </div>
 
         <div class="actions">

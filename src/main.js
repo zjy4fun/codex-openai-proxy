@@ -11,18 +11,36 @@ let proxy;
 
 function readConfig() {
   try {
-    return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+    return normalizeConfig(JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")));
   } catch {
-    return {
-      enabled: false,
-      proxyPort: 15721,
-      defaultModel: "gpt-5.4-mini",
-    };
+    return normalizeConfig({});
   }
 }
 
+function normalizeConfig(raw) {
+  const proxyPort = Number(raw.proxyPort || 15721);
+  const defaultModel = String(raw.defaultModel || "gpt-5.4-mini").trim();
+  return {
+    enabled: Boolean(raw.enabled),
+    proxyPort: Number.isInteger(proxyPort) ? proxyPort : 15721,
+    defaultModel: defaultModel || "gpt-5.4-mini",
+  };
+}
+
+function validateSettings(settings) {
+  const proxyPort = Number(settings.proxyPort);
+  const defaultModel = String(settings.defaultModel || "").trim();
+  if (!defaultModel) {
+    throw new Error("默认模型不能为空");
+  }
+  if (!Number.isInteger(proxyPort) || proxyPort < 1024 || proxyPort > 65535) {
+    throw new Error("代理端口必须是 1024 到 65535 之间的整数");
+  }
+  return { proxyPort, defaultModel };
+}
+
 function saveConfig(next) {
-  config = { ...config, ...next };
+  config = normalizeConfig({ ...config, ...next });
   fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
   fs.writeFileSync(CONFIG_PATH, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
 }
@@ -161,6 +179,43 @@ ipcMain.handle("proxy:testChat", async () => {
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error?.message || "测试请求失败");
   return payload;
+});
+
+ipcMain.handle("settings:update", async (_event, settings) => {
+  const nextSettings = validateSettings(settings);
+  const previousConfig = { ...config };
+  const wasEnabled = proxy.enabled;
+  const portChanged = nextSettings.proxyPort !== config.proxyPort;
+
+  if (!portChanged) {
+    saveConfig(nextSettings);
+    proxy.defaultModel = config.defaultModel;
+    return statusPayload();
+  }
+
+  if (wasEnabled) await proxy.stop();
+  saveConfig({ ...nextSettings, enabled: wasEnabled });
+  createProxy();
+
+  try {
+    if (wasEnabled) await proxy.start();
+  } catch (error) {
+    const message = error?.code === "EADDRINUSE"
+      ? `端口 ${nextSettings.proxyPort} 已被占用`
+      : error?.message || String(error);
+    saveConfig(previousConfig);
+    createProxy();
+    if (wasEnabled) {
+      try {
+        await proxy.start();
+      } catch (restoreError) {
+        proxy.lastError = restoreError?.message || String(restoreError);
+      }
+    }
+    throw new Error(message);
+  }
+
+  return statusPayload();
 });
 
 ipcMain.handle("clipboard:writeText", (_event, text) => {
