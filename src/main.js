@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, clipboard, shell, Menu } = require("electron");
+const { app, BrowserWindow, ipcMain, clipboard, shell, Menu, Tray, nativeImage, dialog } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const { CodexOpenAIProxy } = require("./proxy");
@@ -12,6 +12,8 @@ const {
 const CONFIG_PATH = path.join(app.getPath("userData"), "config.json");
 
 let mainWindow;
+let tray;
+let isQuitting = false;
 let config;
 let proxy;
 
@@ -58,6 +60,19 @@ function createProxy() {
   });
 }
 
+function assetPath(...parts) {
+  if (!app.isPackaged) return path.join(app.getAppPath(), ...parts);
+  const externalPath = path.join(process.resourcesPath, ...parts);
+  if (fs.existsSync(externalPath)) return externalPath;
+  return path.join(app.getAppPath(), ...parts);
+}
+
+function runtimeAssetPath(fileName) {
+  const externalPath = assetPath("build", fileName);
+  if (fs.existsSync(externalPath)) return externalPath;
+  return assetPath("src", "assets", fileName);
+}
+
 function statusPayload() {
   return {
     ...proxy.status(),
@@ -65,7 +80,23 @@ function statusPayload() {
   };
 }
 
+function broadcastStatus() {
+  const status = statusPayload();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("proxy:status-updated", status);
+  }
+  updateTrayMenu();
+  return status;
+}
+
 function createWindow() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show();
+    mainWindow.focus();
+    return mainWindow;
+  }
+
+  const iconPath = runtimeAssetPath("icon.png");
   mainWindow = new BrowserWindow({
     width: 980,
     height: 660,
@@ -73,6 +104,7 @@ function createWindow() {
     minHeight: 560,
     title: "Codex OpenAI Proxy",
     backgroundColor: "#f5f7f8",
+    ...(fs.existsSync(iconPath) ? { icon: iconPath } : {}),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -82,6 +114,135 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
+  mainWindow.on("close", (event) => {
+    if (process.platform !== "darwin" || isQuitting) return;
+    event.preventDefault();
+    mainWindow.hide();
+  });
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+
+  return mainWindow;
+}
+
+function showMainWindow() {
+  createWindow();
+}
+
+async function setProxyEnabled(enabled) {
+  if (enabled) {
+    try {
+      await proxy.start();
+      saveConfig({ enabled: true });
+    } catch (error) {
+      proxy.lastError = error?.code === "EADDRINUSE"
+        ? `端口 ${config.proxyPort || 15721} 已被占用`
+        : error?.message || String(error);
+      updateTrayMenu();
+      throw new Error(proxy.lastError);
+    }
+  } else {
+    await proxy.stop();
+    saveConfig({ enabled: false });
+  }
+  return broadcastStatus();
+}
+
+async function toggleProxyFromMenu(enabled) {
+  try {
+    await setProxyEnabled(enabled);
+  } catch (error) {
+    const message = enabled ? "代理启动失败" : "代理关闭失败";
+    dialogOrLog(message, error);
+  }
+}
+
+function dialogOrLog(message, error) {
+  const detail = error?.message || String(error);
+  if (app.isReady()) {
+    dialog.showMessageBox({
+      type: "error",
+      title: message,
+      message,
+      detail,
+    });
+    return;
+  }
+  console.error(`${message}: ${detail}`);
+}
+
+function createTray() {
+  if (process.platform !== "darwin" || tray) return;
+
+  const image = nativeImage.createFromPath(runtimeAssetPath("trayTemplate.png"));
+  image.setTemplateImage(true);
+  tray = new Tray(image);
+  tray.setIgnoreDoubleClickEvents(true);
+  updateTrayMenu();
+}
+
+function updateTrayMenu() {
+  if (!tray || !proxy) return;
+
+  const status = proxy.status();
+  const baseUrl = status.baseUrl;
+  const chatUrl = status.chatCompletionsUrl;
+  tray.setToolTip([
+    "Codex OpenAI Proxy",
+    status.enabled ? "运行中" : "已关闭",
+    `端口 ${status.proxyPort}`,
+  ].join("\n"));
+
+  const menu = Menu.buildFromTemplate([
+    {
+      label: status.enabled ? "代理运行中" : "代理已关闭",
+      enabled: false,
+    },
+    {
+      label: `模型：${status.defaultModel}`,
+      enabled: false,
+    },
+    {
+      label: `端口：${status.proxyPort}`,
+      enabled: false,
+    },
+    { type: "separator" },
+    {
+      label: status.enabled ? "关闭代理" : "开启代理",
+      click: () => toggleProxyFromMenu(!status.enabled),
+    },
+    {
+      label: "显示主窗口",
+      click: () => showMainWindow(),
+    },
+    { type: "separator" },
+    {
+      label: "复制 Base URL",
+      enabled: status.enabled,
+      click: () => clipboard.writeText(baseUrl),
+    },
+    {
+      label: "复制 Chat Completions URL",
+      enabled: status.enabled,
+      click: () => clipboard.writeText(chatUrl),
+    },
+    { type: "separator" },
+    {
+      label: "检查更新...",
+      click: () => checkForUpdatesManual(),
+    },
+    { type: "separator" },
+    {
+      label: "退出 Codex OpenAI Proxy",
+      click: () => {
+        isQuitting = true;
+        app.quit();
+      },
+    },
+  ]);
+
+  tray.setContextMenu(menu);
 }
 
 function setMenu() {
@@ -95,8 +256,19 @@ function setMenu() {
           label: "检查更新...",
           click: () => checkForUpdatesManual(),
         },
+        {
+          label: "显示主窗口",
+          click: () => showMainWindow(),
+        },
         { type: "separator" },
-        { role: "quit" },
+        {
+          label: "退出 Codex OpenAI Proxy",
+          accelerator: "Cmd+Q",
+          click: () => {
+            isQuitting = true;
+            app.quit();
+          },
+        },
       ],
     },
     {
@@ -130,6 +302,7 @@ app.whenReady().then(async () => {
   createProxy();
   registerUpdaterIpcHandlers();
   setMenu();
+  createTray();
   initAutoUpdater();
 
   if (config.enabled) {
@@ -141,11 +314,12 @@ app.whenReady().then(async () => {
         : error?.message || String(error);
     }
   }
+  updateTrayMenu();
 
   createWindow();
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    showMainWindow();
   });
 });
 
@@ -154,27 +328,14 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", async () => {
+  isQuitting = true;
   if (proxy?.enabled) await proxy.stop();
 });
 
 ipcMain.handle("proxy:status", () => statusPayload());
 
 ipcMain.handle("proxy:toggle", async (_event, enabled) => {
-  if (enabled) {
-    try {
-      await proxy.start();
-      saveConfig({ enabled: true });
-    } catch (error) {
-      proxy.lastError = error?.code === "EADDRINUSE"
-        ? `端口 ${config.proxyPort || 15721} 已被占用`
-        : error?.message || String(error);
-      throw new Error(proxy.lastError);
-    }
-  } else {
-    await proxy.stop();
-    saveConfig({ enabled: false });
-  }
-  return statusPayload();
+  return setProxyEnabled(Boolean(enabled));
 });
 
 ipcMain.handle("proxy:testChat", async () => {
@@ -205,7 +366,7 @@ ipcMain.handle("settings:update", async (_event, settings) => {
   if (!portChanged) {
     saveConfig(nextSettings);
     proxy.defaultModel = config.defaultModel;
-    return statusPayload();
+    return broadcastStatus();
   }
 
   if (wasEnabled) await proxy.stop();
@@ -230,7 +391,7 @@ ipcMain.handle("settings:update", async (_event, settings) => {
     throw new Error(message);
   }
 
-  return statusPayload();
+  return broadcastStatus();
 });
 
 ipcMain.handle("clipboard:writeText", (_event, text) => {

@@ -5,6 +5,11 @@ contextBridge.exposeInMainWorld("proxyApp", {
   toggle: (enabled) => ipcRenderer.invoke("proxy:toggle", enabled),
   testChat: () => ipcRenderer.invoke("proxy:testChat"),
   updateSettings: (settings) => ipcRenderer.invoke("settings:update", settings),
+  onStatusUpdated: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("proxy:status-updated", listener);
+    return () => ipcRenderer.removeListener("proxy:status-updated", listener);
+  },
   cancelUpdateDownload: () => ipcRenderer.invoke("proxy:update-cancel"),
   restartForUpdate: () => ipcRenderer.invoke("proxy:update-restart"),
   closeUpdateWindow: () => ipcRenderer.invoke("proxy:update-close-window"),

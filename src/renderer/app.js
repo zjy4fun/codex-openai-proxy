@@ -119,5 +119,11 @@ els.testBtn.addEventListener("click", async () => {
   }
 });
 
+if (typeof window.proxyApp.onStatusUpdated === "function") {
+  window.proxyApp.onStatusUpdated((status) => {
+    render(status);
+  });
+}
+
 loadStatus();
 setInterval(loadStatus, 5000);

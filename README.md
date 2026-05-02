@@ -23,6 +23,10 @@ After turning on the switch in the app:
 
 The default model and proxy port can be changed in the app. If you change the port while the proxy is running, the app restarts the proxy on the new port and updates the displayed URLs.
 
+## macOS Menu Bar
+
+On macOS, Codex OpenAI Proxy also appears in the menu bar. From there you can turn the proxy on or off, show the main window, copy the local URLs, check for updates, or quit the app.
+
 ## Updates
 
 Starting with `v0.1.4`, the app checks GitHub Releases after launch and can hot-update by downloading the published `app.asar` package instead of the full installer. You can also run **检查更新...** from the application menu.
@@ -58,7 +62,7 @@ npm run dist
 Push a semver tag to trigger GitHub Actions:
 
 ```bash
-git tag v0.1.4
+git tag v0.1.5
 git push origin main --tags
 ```
 
