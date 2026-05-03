@@ -202,7 +202,6 @@ function buildResponsesPayload(chatBody, defaultModel) {
     }
   }
 
-  const maxOutputTokens = chatBody.max_completion_tokens || chatBody.max_tokens;
   const payload = {
     model: normalizeModel(chatBody.model, defaultModel),
     instructions:
@@ -218,7 +217,6 @@ function buildResponsesPayload(chatBody, defaultModel) {
     stream: true,
     reasoning: { effort: "none" },
   };
-  if (Number.isFinite(maxOutputTokens)) payload.max_output_tokens = maxOutputTokens;
   return payload;
 }
 
@@ -476,4 +474,5 @@ async function readBody(req) {
 module.exports = {
   CodexOpenAIProxy,
   authStatus,
+  buildResponsesPayload,
 };
