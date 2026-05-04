@@ -16,54 +16,6 @@ if (!outFile || !Number.isInteger(size) || size <= 0) {
 const VIEWBOX_SIZE = 44;
 const SAMPLE_GRID = size <= 32 ? 8 : 4;
 
-function cubicPoint(p0, p1, p2, p3, t) {
-  const mt = 1 - t;
-  const mt2 = mt * mt;
-  const t2 = t * t;
-  return {
-    x: mt2 * mt * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t2 * t * p3.x,
-    y: mt2 * mt * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t2 * t * p3.y,
-  };
-}
-
-function buildCodexCurve() {
-  const segments = [
-    [
-      { x: 31.5, y: 13.5 },
-      { x: 28.8, y: 10.5 },
-      { x: 25, y: 8.8 },
-      { x: 21, y: 8.8 },
-    ],
-    [
-      { x: 21, y: 8.8 },
-      { x: 13.7, y: 8.8 },
-      { x: 7.8, y: 14.7 },
-      { x: 7.8, y: 22 },
-    ],
-    [
-      { x: 7.8, y: 22 },
-      { x: 7.8, y: 29.3 },
-      { x: 13.7, y: 35.2 },
-      { x: 21, y: 35.2 },
-    ],
-    [
-      { x: 21, y: 35.2 },
-      { x: 25, y: 35.2 },
-      { x: 28.8, y: 33.5 },
-      { x: 31.5, y: 30.5 },
-    ],
-  ];
-
-  const points = [];
-  for (const segment of segments) {
-    const steps = 18;
-    for (let i = points.length ? 1 : 0; i <= steps; i += 1) {
-      points.push(cubicPoint(...segment, i / steps));
-    }
-  }
-  return points;
-}
-
 function distanceToSegmentSquared(point, start, end) {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
@@ -92,21 +44,35 @@ function isInStroke(point, points, width) {
   return false;
 }
 
-function isInCircle(point, circle) {
-  const dx = point.x - circle.x;
-  const dy = point.y - circle.y;
-  return dx * dx + dy * dy <= circle.r * circle.r;
-}
+const STROKES = [
+  {
+    width: 4.8,
+    points: [
+      { x: 17, y: 12 },
+      { x: 8.8, y: 22 },
+      { x: 17, y: 32 },
+    ],
+  },
+  {
+    width: 4.8,
+    points: [
+      { x: 27, y: 12 },
+      { x: 35.2, y: 22 },
+      { x: 27, y: 32 },
+    ],
+  },
+  {
+    width: 4.8,
+    points: [
+      { x: 18.4, y: 22 },
+      { x: 25.6, y: 22 },
+    ],
+  },
+];
 
 function isCovered(point) {
-  return (
-    isInStroke(point, buildCodexCurve.cached, 5.2) ||
-    isInStroke(point, [{ x: 20.8, y: 22 }, { x: 35.8, y: 22 }], 4.2) ||
-    isInCircle(point, { x: 36, y: 22, r: 3.2 })
-  );
+  return STROKES.some((stroke) => isInStroke(point, stroke.points, stroke.width));
 }
-
-buildCodexCurve.cached = buildCodexCurve();
 
 function crc32(buffer) {
   let crc = -1;

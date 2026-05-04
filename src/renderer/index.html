@@ -34,10 +34,10 @@
         </div>
 
         <div class="settings-form">
-          <label class="field">
-            <span>默认模型</span>
-            <input id="modelInput" class="text-input" type="text" spellcheck="false" autocomplete="off" />
-          </label>
+          <section class="models-field" aria-labelledby="modelsLabel">
+            <div id="modelsLabel" class="field-label">支持的模型</div>
+            <ul id="modelsList" class="model-list"></ul>
+          </section>
           <label class="field">
             <span>代理端口</span>
             <input id="portInput" class="text-input" type="number" min="1024" max="65535" step="1" inputmode="numeric" />

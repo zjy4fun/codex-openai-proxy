@@ -4,7 +4,7 @@ const els = {
   enabledSwitch: document.querySelector("#enabledSwitch"),
   switchNote: document.querySelector("#switchNote"),
   authState: document.querySelector("#authState"),
-  modelInput: document.querySelector("#modelInput"),
+  modelsList: document.querySelector("#modelsList"),
   portInput: document.querySelector("#portInput"),
   saveSettingsBtn: document.querySelector("#saveSettingsBtn"),
   baseUrl: document.querySelector("#baseUrl"),
@@ -21,6 +21,7 @@ const els = {
 
 let current = null;
 let settingsDirty = false;
+let renderedModels = "";
 
 function setMessage(text, kind = "") {
   els.message.textContent = text || "";
@@ -34,8 +35,17 @@ function render(status) {
   els.stateText.textContent = status.enabled ? "运行中" : "已关闭";
   els.switchNote.textContent = status.enabled ? "OpenAI Base URL 已可用。" : "打开后显示可用 Base URL。";
   els.authState.textContent = status.auth.ready ? status.auth.source : "未找到";
+  const models = Array.isArray(status.supportedModels) ? status.supportedModels : [];
+  const modelsKey = models.join("\n");
+  if (modelsKey !== renderedModels) {
+    renderedModels = modelsKey;
+    els.modelsList.replaceChildren(...models.map((model) => {
+      const item = document.createElement("li");
+      item.textContent = model;
+      return item;
+    }));
+  }
   if (!settingsDirty) {
-    els.modelInput.value = status.defaultModel;
     els.portInput.value = String(status.proxyPort);
     els.saveSettingsBtn.disabled = true;
   }
@@ -85,7 +95,6 @@ async function saveSettings() {
   setMessage("正在保存配置...");
   try {
     const status = await window.proxyApp.updateSettings({
-      defaultModel: els.modelInput.value.trim(),
       proxyPort: Number(els.portInput.value),
     });
     settingsDirty = false;
@@ -101,7 +110,6 @@ async function saveSettings() {
 }
 
 els.enabledSwitch.addEventListener("change", (event) => toggle(event.target.checked));
-els.modelInput.addEventListener("input", markSettingsDirty);
 els.portInput.addEventListener("input", markSettingsDirty);
 els.saveSettingsBtn.addEventListener("click", saveSettings);
 els.refreshBtn.addEventListener("click", loadStatus);

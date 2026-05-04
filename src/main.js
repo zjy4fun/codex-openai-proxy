@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, clipboard, shell, Menu, Tray, nativeImage, dialog } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
-const { CodexOpenAIProxy } = require("./proxy");
+const { CodexOpenAIProxy, SUPPORTED_MODELS } = require("./proxy");
 const {
   applyPendingUpdate,
   checkForUpdatesManual,
@@ -37,14 +37,10 @@ function normalizeConfig(raw) {
 
 function validateSettings(settings) {
   const proxyPort = Number(settings.proxyPort);
-  const defaultModel = String(settings.defaultModel || "").trim();
-  if (!defaultModel) {
-    throw new Error("默认模型不能为空");
-  }
   if (!Number.isInteger(proxyPort) || proxyPort < 1024 || proxyPort > 65535) {
     throw new Error("代理端口必须是 1024 到 65535 之间的整数");
   }
-  return { proxyPort, defaultModel };
+  return { proxyPort };
 }
 
 function saveConfig(next) {
@@ -200,7 +196,7 @@ function updateTrayMenu() {
       enabled: false,
     },
     {
-      label: `模型：${status.defaultModel}`,
+      label: `支持模型：${SUPPORTED_MODELS.length} 个`,
       enabled: false,
     },
     {
@@ -347,7 +343,7 @@ ipcMain.handle("proxy:testChat", async () => {
       authorization: "Bearer dummy",
     },
     body: JSON.stringify({
-      model: config.defaultModel || "gpt-5.4-mini",
+      model: proxy.defaultModel,
       messages: [{ role: "user", content: "Reply with exactly: ok" }],
       stream: false,
     }),
@@ -365,7 +361,6 @@ ipcMain.handle("settings:update", async (_event, settings) => {
 
   if (!portChanged) {
     saveConfig(nextSettings);
-    proxy.defaultModel = config.defaultModel;
     return broadcastStatus();
   }
 

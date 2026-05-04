@@ -25,9 +25,9 @@ After turning on the switch in the app:
 - OpenAI Base URL: `http://127.0.0.1:15721/v1`
 - Chat Completions URL: `http://127.0.0.1:15721/v1/chat/completions`
 - API Key: any non-empty value, for example `dummy`
-- Model: `gpt-5.4-mini`
+- Model: choose any supported model listed by `GET /v1/models`, for example `gpt-5.4-mini`
 
-The default model and proxy port can be changed in the app. If you change the port while the proxy is running, the app restarts the proxy on the new port and updates the displayed URLs.
+The app shows the supported model list and lets you change the proxy port. If you change the port while the proxy is running, the app restarts the proxy on the new port and updates the displayed URLs.
 
 ## macOS Menu Bar
 

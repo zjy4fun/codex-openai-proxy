@@ -202,6 +202,38 @@ h1 {
   font-size: 13px;
 }
 
+.field-label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.models-field {
+  display: grid;
+  gap: 8px;
+}
+
+.model-list {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.model-list li {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  padding: 0 11px;
+  border: 1px solid color-mix(in oklch, var(--line) 76%, transparent);
+  border-radius: 7px;
+  background: oklch(98% 0.006 238);
+  color: var(--ink);
+  font-family: Menlo, Consolas, monospace;
+  font-size: 13px;
+  word-break: break-word;
+}
+
 .text-input {
   width: 100%;
   height: 40px;

@@ -9,6 +9,7 @@ const CODEX_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
 const UPSTREAM_RESPONSES_URL = "https://chatgpt.com/backend-api/codex/responses";
 const CODEX_AUTH_PATH = path.join(os.homedir(), ".codex", "auth.json");
 const CCS_AUTH_PATH = path.join(os.homedir(), ".cc-switch", "codex_oauth_auth.json");
+const SUPPORTED_MODELS = ["gpt-5.4-mini", "gpt-5.4", "gpt-5.5"];
 
 const corsHeaders = {
   "access-control-allow-origin": "*",
@@ -301,6 +302,7 @@ class CodexOpenAIProxy {
       chatCompletionsUrl: this.chatCompletionsUrl,
       proxyPort: this.port,
       defaultModel: this.defaultModel,
+      supportedModels: SUPPORTED_MODELS,
       auth: authStatus(),
       lastError: this.lastError,
     };
@@ -420,7 +422,7 @@ class CodexOpenAIProxy {
       if (req.method === "GET" && url.pathname === "/v1/models") {
         this.sendJson(res, 200, {
           object: "list",
-          data: ["gpt-5.4-mini", "gpt-5.4", "gpt-5.5"].map((id) => ({
+          data: SUPPORTED_MODELS.map((id) => ({
             id,
             object: "model",
             owned_by: "openai",
@@ -475,4 +477,5 @@ module.exports = {
   CodexOpenAIProxy,
   authStatus,
   buildResponsesPayload,
+  SUPPORTED_MODELS,
 };
