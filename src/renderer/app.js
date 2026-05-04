@@ -41,7 +41,13 @@ function render(status) {
     renderedModels = modelsKey;
     els.modelsList.replaceChildren(...models.map((model) => {
       const item = document.createElement("li");
-      item.textContent = model;
+      const button = document.createElement("button");
+      button.className = "model-copy";
+      button.type = "button";
+      button.textContent = model;
+      button.setAttribute("aria-label", `复制模型名 ${model}`);
+      button.addEventListener("click", () => copy(model, `已复制模型：${model}`));
+      item.append(button);
       return item;
     }));
   }
@@ -78,9 +84,9 @@ async function toggle(enabled) {
   }
 }
 
-async function copy(text) {
+async function copy(text, successMessage = "已复制。") {
   await window.proxyApp.copy(text);
-  setMessage("已复制。", "good");
+  setMessage(successMessage, "good");
 }
 
 function markSettingsDirty() {

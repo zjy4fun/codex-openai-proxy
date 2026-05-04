@@ -1,6 +1,6 @@
 {
   "name": "codex-openai-proxy",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "A desktop switch for exposing Codex OAuth as an OpenAI-compatible local API.",
   "main": "src/main.js",
   "author": "zjy4fun <zjy4fun@gmail.com>",

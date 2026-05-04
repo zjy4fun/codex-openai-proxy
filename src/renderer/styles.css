@@ -220,7 +220,8 @@ h1 {
   list-style: none;
 }
 
-.model-list li {
+.model-copy {
+  width: 100%;
   min-height: 34px;
   display: flex;
   align-items: center;
@@ -229,9 +230,24 @@ h1 {
   border-radius: 7px;
   background: oklch(98% 0.006 238);
   color: var(--ink);
+  cursor: pointer;
   font-family: Menlo, Consolas, monospace;
   font-size: 13px;
+  text-align: left;
   word-break: break-word;
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease, transform .16s ease;
+}
+
+.model-copy:hover {
+  border-color: color-mix(in oklch, var(--accent) 46%, var(--line));
+  background: color-mix(in oklch, var(--accent) 7%, oklch(98% 0.006 238));
+  transform: translateY(-1px);
+}
+
+.model-copy:focus-visible {
+  outline: none;
+  border-color: color-mix(in oklch, var(--accent) 64%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
 }
 
 .text-input {
