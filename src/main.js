@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, clipboard, shell, Menu, Tray, nativeImage, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, clipboard, shell, Menu, Tray, nativeImage, dialog, nativeTheme } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const { CodexOpenAIProxy, SUPPORTED_MODELS } = require("./proxy");
@@ -17,6 +17,10 @@ let isQuitting = false;
 let config;
 let proxy;
 
+function normalizeThemeSource(themeSource) {
+  return ["system", "light", "dark"].includes(themeSource) ? themeSource : "system";
+}
+
 function readConfig() {
   try {
     return normalizeConfig(JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")));
@@ -32,6 +36,7 @@ function normalizeConfig(raw) {
     enabled: Boolean(raw.enabled),
     proxyPort: Number.isInteger(proxyPort) ? proxyPort : 15721,
     defaultModel: defaultModel || "gpt-5.4-mini",
+    themeSource: normalizeThemeSource(raw.themeSource),
   };
 }
 
@@ -56,6 +61,16 @@ function createProxy() {
   });
 }
 
+function windowBackgroundColor() {
+  return nativeTheme.shouldUseDarkColors ? "#111719" : "#f5f7f8";
+}
+
+function updateWindowTheme() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setBackgroundColor(windowBackgroundColor());
+  }
+}
+
 function assetPath(...parts) {
   if (!app.isPackaged) return path.join(app.getAppPath(), ...parts);
   const externalPath = path.join(process.resourcesPath, ...parts);
@@ -73,6 +88,8 @@ function statusPayload() {
   return {
     ...proxy.status(),
     desiredEnabled: Boolean(config.enabled),
+    themeSource: normalizeThemeSource(config.themeSource),
+    resolvedTheme: nativeTheme.shouldUseDarkColors ? "dark" : "light",
   };
 }
 
@@ -99,7 +116,7 @@ function createWindow() {
     minWidth: 720,
     minHeight: 560,
     title: "Codex OpenAI Proxy",
-    backgroundColor: "#f5f7f8",
+    backgroundColor: windowBackgroundColor(),
     ...(fs.existsSync(iconPath) ? { icon: iconPath } : {}),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -295,11 +312,17 @@ app.whenReady().then(async () => {
   if (applyPendingUpdate()) return;
 
   config = readConfig();
+  nativeTheme.themeSource = normalizeThemeSource(config.themeSource);
   createProxy();
   registerUpdaterIpcHandlers();
   setMenu();
   createTray();
   initAutoUpdater();
+
+  nativeTheme.on("updated", () => {
+    updateWindowTheme();
+    broadcastStatus();
+  });
 
   if (config.enabled) {
     try {
@@ -386,6 +409,13 @@ ipcMain.handle("settings:update", async (_event, settings) => {
     throw new Error(message);
   }
 
+  return broadcastStatus();
+});
+
+ipcMain.handle("theme:update", (_event, themeSource) => {
+  saveConfig({ themeSource: normalizeThemeSource(themeSource) });
+  nativeTheme.themeSource = config.themeSource;
+  updateWindowTheme();
   return broadcastStatus();
 });
 

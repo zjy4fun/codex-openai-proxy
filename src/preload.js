@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("proxyApp", {
   toggle: (enabled) => ipcRenderer.invoke("proxy:toggle", enabled),
   testChat: () => ipcRenderer.invoke("proxy:testChat"),
   updateSettings: (settings) => ipcRenderer.invoke("settings:update", settings),
+  updateTheme: (themeSource) => ipcRenderer.invoke("theme:update", themeSource),
   onStatusUpdated: (callback) => {
     const listener = (_event, payload) => callback(payload);
     ipcRenderer.on("proxy:status-updated", listener);

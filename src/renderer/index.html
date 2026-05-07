@@ -3,7 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
   <title>Codex OpenAI Proxy</title>
+  <script>
+    (() => {
+      const validThemes = new Set(["system", "light", "dark"]);
+      let themeSource = "system";
+      try {
+        const savedTheme = localStorage.getItem("proxy-theme-source");
+        if (validThemes.has(savedTheme)) themeSource = savedTheme;
+      } catch {
+        themeSource = "system";
+      }
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.themeSource = themeSource;
+      document.documentElement.dataset.theme = themeSource === "system"
+        ? (prefersDark ? "dark" : "light")
+        : themeSource;
+    })();
+  </script>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -42,6 +60,14 @@
             <span>代理端口</span>
             <input id="portInput" class="text-input" type="number" min="1024" max="65535" step="1" inputmode="numeric" />
           </label>
+          <section class="appearance-field" aria-labelledby="appearanceLabel">
+            <div id="appearanceLabel" class="field-label">外观</div>
+            <div class="segmented-control" role="group" aria-label="外观模式">
+              <button class="theme-option" type="button" data-theme-option="system" aria-pressed="true">跟随系统</button>
+              <button class="theme-option" type="button" data-theme-option="light" aria-pressed="false">亮色</button>
+              <button class="theme-option" type="button" data-theme-option="dark" aria-pressed="false">暗色</button>
+            </div>
+          </section>
           <button id="saveSettingsBtn" class="btn" type="button" disabled>保存配置</button>
         </div>
 

@@ -17,8 +17,11 @@ const els = {
   copyBase: document.querySelector("#copyBase"),
   copyChat: document.querySelector("#copyChat"),
   copyKey: document.querySelector("#copyKey"),
+  themeButtons: [...document.querySelectorAll("[data-theme-option]")],
 };
 
+const THEME_SOURCES = new Set(["system", "light", "dark"]);
+const systemThemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
 let current = null;
 let settingsDirty = false;
 let renderedModels = "";
@@ -28,8 +31,33 @@ function setMessage(text, kind = "") {
   els.message.className = "message" + (kind ? " " + kind : "");
 }
 
+function resolveTheme(themeSource) {
+  if (themeSource === "light" || themeSource === "dark") return themeSource;
+  return systemThemeQuery.matches ? "dark" : "light";
+}
+
+function applyTheme(themeSource, resolvedTheme = resolveTheme(themeSource)) {
+  const nextThemeSource = THEME_SOURCES.has(themeSource) ? themeSource : "system";
+  const nextResolvedTheme = resolvedTheme === "dark" || resolvedTheme === "light"
+    ? resolvedTheme
+    : resolveTheme(nextThemeSource);
+  document.documentElement.dataset.themeSource = nextThemeSource;
+  document.documentElement.dataset.theme = nextResolvedTheme;
+  try {
+    localStorage.setItem("proxy-theme-source", nextThemeSource);
+  } catch {
+    // Theme still applies for this session if localStorage is unavailable.
+  }
+  els.themeButtons.forEach((button) => {
+    const active = button.dataset.themeOption === nextThemeSource;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
 function render(status) {
   current = status;
+  applyTheme(status.themeSource, status.resolvedTheme);
   els.enabledSwitch.checked = status.enabled;
   els.dot.classList.toggle("on", status.enabled);
   els.stateText.textContent = status.enabled ? "运行中" : "已关闭";
@@ -115,6 +143,27 @@ async function saveSettings() {
   }
 }
 
+async function updateTheme(themeSource) {
+  if (!THEME_SOURCES.has(themeSource)) return;
+  const previousThemeSource = current?.themeSource || document.documentElement.dataset.themeSource || "system";
+  applyTheme(themeSource);
+  els.themeButtons.forEach((button) => {
+    button.disabled = true;
+  });
+  setMessage("正在切换外观...");
+  try {
+    render(await window.proxyApp.updateTheme(themeSource));
+    setMessage("外观已更新。", "good");
+  } catch (error) {
+    applyTheme(previousThemeSource, current?.resolvedTheme);
+    setMessage(error.message, "bad");
+  } finally {
+    els.themeButtons.forEach((button) => {
+      button.disabled = false;
+    });
+  }
+}
+
 els.enabledSwitch.addEventListener("change", (event) => toggle(event.target.checked));
 els.portInput.addEventListener("input", markSettingsDirty);
 els.saveSettingsBtn.addEventListener("click", saveSettings);
@@ -122,6 +171,14 @@ els.refreshBtn.addEventListener("click", loadStatus);
 els.copyBase.addEventListener("click", () => current?.enabled && copy(current.baseUrl));
 els.copyChat.addEventListener("click", () => current?.enabled && copy(current.chatCompletionsUrl));
 els.copyKey.addEventListener("click", () => copy("dummy"));
+els.themeButtons.forEach((button) => {
+  button.addEventListener("click", () => updateTheme(button.dataset.themeOption));
+});
+systemThemeQuery.addEventListener("change", () => {
+  if ((current?.themeSource || document.documentElement.dataset.themeSource) === "system") {
+    applyTheme("system");
+  }
+});
 els.testBtn.addEventListener("click", async () => {
   setMessage("正在测试...");
   try {
