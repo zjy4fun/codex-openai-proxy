@@ -276,7 +276,7 @@ function usageFromResponses(usage) {
 
 class CodexOpenAIProxy {
   constructor(options = {}) {
-    this.host = options.host || "127.0.0.1";
+    this.host = options.host || "0.0.0.0";
     this.port = Number(options.port || 15721);
     this.defaultModel = options.defaultModel || "gpt-5.4-mini";
     this.server = null;
